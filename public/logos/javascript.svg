@@ -1,0 +1,8 @@
+<html>
+<body style="margin:0;padding:0;background:transparent;">
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#F0DB4F" rx="10" ry="10"/>
+  <text x="100" y="120" font-family="Arial" font-size="50" text-anchor="middle" fill="black">JS</text>
+</svg>
+</body>
+</html>

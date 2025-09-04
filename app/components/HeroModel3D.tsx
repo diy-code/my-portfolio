@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 export default function HeroModel3D() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -11,93 +11,117 @@ export default function HeroModel3D() {
     
     // Setup
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
-    camera.position.z = 30;
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 1000);
+    camera.position.z = 5;
     
     const renderer = new THREE.WebGLRenderer({ 
       antialias: true,
       alpha: true 
     });
-    renderer.setSize(500, 500);
+    
+    // Set initial size
+    const size = Math.min(window.innerWidth * 0.3, 400);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(size, size);
     containerRef.current.appendChild(renderer.domElement);
     
-    // Controls
+    // Set output color space for modern Three.js
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    
+    // Controls for interactivity
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
+    controls.dampingFactor = 0.07;
     controls.enableZoom = false;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 1;
+    controls.autoRotateSpeed = 1.5; // Base rotation speed
     
     // Lights
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0x222244, 0.8);
     scene.add(ambientLight);
     
-    const directionalLight = new THREE.DirectionalLight(0x60a5fa, 1);
-    directionalLight.position.set(1, 1, 1);
-    scene.add(directionalLight);
+    // Directional lights for each face to enhance glow effect
+    const createDirectionalLight = (x: number, y: number, z: number, color: number) => {
+      const light = new THREE.DirectionalLight(color, 0.7);
+      light.position.set(x, y, z);
+      scene.add(light);
+      return light;
+    };
     
-    // Create neural network node geometry
-    const nodes = [];
-    const lines = [];
-    const nodeGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-    const nodeMaterial = new THREE.MeshPhongMaterial({ color: 0x60a5fa });
+    createDirectionalLight(5, 0, 0, 0x60a5fa); // Right
+    createDirectionalLight(-5, 0, 0, 0x60a5fa); // Left
+    createDirectionalLight(0, 5, 0, 0x3b82f6); // Top
+    createDirectionalLight(0, -5, 0, 0x3b82f6); // Bottom
+    createDirectionalLight(0, 0, 5, 0x2563eb); // Front
+    createDirectionalLight(0, 0, -5, 0x2563eb); // Back
     
-    // Create connection line material
-    const lineMaterial = new THREE.LineBasicMaterial({ 
+    // Point light in center of cube for extra glow
+    const pointLight = new THREE.PointLight(0x60a5fa, 0.8);
+    pointLight.position.set(0, 0, 0);
+    scene.add(pointLight);
+    
+    // For future texture loading
+    // const textureLoader = new THREE.TextureLoader();
+    
+    // Note: We're using placeholder colors for now, but in the future 
+    // we can load actual textures with these commented functions
+    /*
+    const loadTexture = (url: string) => {
+      return textureLoader.load(url);
+    };
+    
+    // Create materials for each face
+    const createFaceMaterial = (logoTexture: THREE.Texture) => {
+      return new THREE.MeshPhysicalMaterial({
+        map: logoTexture,
+        transparent: true,
+        transmission: 0.7, // Glass transparency
+        roughness: 0.2,
+        metalness: 0.3,
+        clearcoat: 1,
+        clearcoatRoughness: 0.2,
+        emissive: 0x1e3a8a,
+        emissiveIntensity: 0.2,
+        opacity: 0.95,
+      });
+    };
+    */
+    
+    // Placeholder colored materials while textures load
+    const placeholderMaterials = [
+      new THREE.MeshPhysicalMaterial({ color: 0x5E97D0, transparent: true, transmission: 0.7, roughness: 0.2, clearcoat: 1 }), // C++ (blue)
+      new THREE.MeshPhysicalMaterial({ color: 0x4B8BBE, transparent: true, transmission: 0.7, roughness: 0.2, clearcoat: 1 }), // Python (blue)
+      new THREE.MeshPhysicalMaterial({ color: 0x68217A, transparent: true, transmission: 0.7, roughness: 0.2, clearcoat: 1 }), // C# (purple)
+      new THREE.MeshPhysicalMaterial({ color: 0xF89820, transparent: true, transmission: 0.7, roughness: 0.2, clearcoat: 1 }), // Java (orange)
+      new THREE.MeshPhysicalMaterial({ color: 0x00758F, transparent: true, transmission: 0.7, roughness: 0.2, clearcoat: 1 }), // SQL (teal)
+      new THREE.MeshPhysicalMaterial({ color: 0xF0DB4F, transparent: true, transmission: 0.7, roughness: 0.2, clearcoat: 1 }), // JavaScript (yellow)
+    ];
+    
+    // Create cube with placeholder materials
+    const geometry = new THREE.BoxGeometry(1.6, 1.6, 1.6);
+    const cube = new THREE.Mesh(geometry, placeholderMaterials);
+    scene.add(cube);
+    
+    // Glowing edges
+    const edgesGeometry = new THREE.EdgesGeometry(geometry);
+    const edgesMaterial = new THREE.LineBasicMaterial({ 
       color: 0x60a5fa,
       transparent: true,
-      opacity: 0.4 
+      opacity: 0.8,
+      linewidth: 2 // Note: linewidth only works in Firefox/Safari, not Chrome
     });
+    const edges = new THREE.LineSegments(edgesGeometry, edgesMaterial);
     
-    // Generate random nodes in 3D space
-    for (let i = 0; i < 50; i++) {
-      const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
-      // Position in a roughly spherical pattern
-      const radius = 15;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.random() * Math.PI;
-      
-      node.position.x = radius * Math.sin(phi) * Math.cos(theta);
-      node.position.y = radius * Math.sin(phi) * Math.sin(theta);
-      node.position.z = radius * Math.cos(phi);
-      
-      // Add slight random variation
-      node.position.x += (Math.random() - 0.5) * 8;
-      node.position.y += (Math.random() - 0.5) * 8;
-      node.position.z += (Math.random() - 0.5) * 8;
-      
-      scene.add(node);
-      nodes.push(node);
-    }
-    
-    // Connect nearby nodes with lines
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const dist = nodes[i].position.distanceTo(nodes[j].position);
-        if (dist < 8) {
-          const geometry = new THREE.BufferGeometry().setFromPoints([
-            nodes[i].position,
-            nodes[j].position
-          ]);
-          const line = new THREE.Line(geometry, lineMaterial);
-          scene.add(line);
-          lines.push(line);
-        }
-      }
-    }
+    // Add the edges to the cube
+    cube.add(edges);
     
     // Animation
     const animate = () => {
       requestAnimationFrame(animate);
       
-      // Pulse effect on nodes
-      const time = Date.now() * 0.001;
-      nodes.forEach((node, i) => {
-        node.scale.x = 0.8 + 0.4 * Math.sin(time + i * 0.1);
-        node.scale.y = 0.8 + 0.4 * Math.sin(time + i * 0.1);
-        node.scale.z = 0.8 + 0.4 * Math.sin(time + i * 0.1);
-      });
+      // Rotate cube slowly
+      cube.rotation.y += 0.005;
+      cube.rotation.x += 0.0025;
       
       // Update controls
       controls.update();
@@ -139,22 +163,34 @@ export default function HeroModel3D() {
     
     animate();
     
+    // Store reference to avoid React warning
+    const currentRef = containerRef.current;
+    
     // Cleanup
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('resize', handleResize);
-      containerRef.current?.removeChild(renderer.domElement);
       
       // Dispose resources
-      nodes.forEach(node => {
-        node.geometry.dispose();
-        (node.material as THREE.Material).dispose();
-      });
+      geometry.dispose();
+      edgesGeometry.dispose();
+      edgesMaterial.dispose();
       
-      lines.forEach(line => {
-        line.geometry.dispose();
-        (line.material as THREE.Material).dispose();
-      });
+      // Dispose materials
+      if (Array.isArray(cube.material)) {
+        cube.material.forEach(material => material.dispose());
+      } else if (cube.material) {
+        (cube.material as THREE.Material).dispose();
+      }
+      
+      // Clear scene and dispose renderer
+      scene.clear();
+      renderer.dispose();
+      
+      // Remove canvas
+      if (currentRef && renderer.domElement) {
+        currentRef.removeChild(renderer.domElement);
+      }
     };
   }, []);
   
