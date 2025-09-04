@@ -66,10 +66,9 @@ function GlassCube({ size = 1.8, speed = 0.15, textures, accent = "#60a5fa" }: P
         ref={meshRef}
         onPointerOver={() => setHover(true)}
         onPointerOut={() => setHover(false)}
+        material={faceMaterials}
       >
         <boxGeometry args={[size, size, size]} />
-        {/* Apply materials to faces */}
-        <primitive object={faceMaterials} attach="material" />
       </mesh>
 
       {/* outline */}

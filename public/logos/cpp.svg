@@ -1,8 +1,4 @@
-<html>
-<body style="margin:0;padding:0;background:transparent;">
 <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
   <rect width="200" height="200" fill="#5E97D0" rx="10" ry="10"/>
   <text x="100" y="120" font-family="Arial" font-size="60" text-anchor="middle" fill="white">C++</text>
 </svg>
-</body>
-</html>

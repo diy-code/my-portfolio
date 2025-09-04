@@ -1,10 +1,12 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import InteractiveBackground from "./components/InteractiveBackground";
-import CodeStream from "./components/CodeStream";
 import ProjectCard from "@/components/ProjectCard";
 import { projects } from "@/data/projects";
-import HeroCube from "@/components/HeroCube";
+import dynamic from "next/dynamic";
+
+const InteractiveBackground = dynamic(() => import("./components/InteractiveBackground"), { ssr: false });
+const CodeStream = dynamic(() => import("./components/CodeStream"), { ssr: false });
+const HeroCube = dynamic(() => import("@/components/HeroCube"), { ssr: false });
 
 /** ---- קל לקסטומיזציה ---- */
 const content = {
