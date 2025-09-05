@@ -1,262 +1,300 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import * as THREE from "three";
 
-type VantaEffect = "waves" | "clouds";
+/** Performance tuning parameters */
+const PIXEL_RATIO_CAP = 1.25;           // hard cap for DPR
+const TARGET_FPS_HIDDEN = 0.0;          // "paused" when hidden
+const SPEED_DAMP_OFFSCREEN = 0.25;      // slow when hero not visible
+const HERO_ONLY = true;                 // set true to render only top section
 
-export default function VantaBackground() {
+export default function CloudBackground() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const vantaEffectRef = useRef<any>(null);
-  const [debugMessage, setDebugMessage] = useState("Initializing...");
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [currentEffect, setCurrentEffect] = useState<VantaEffect>(() => {
-    // Try to get from URL param first, then localStorage
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const bgParam = urlParams.get("bg");
-      if (bgParam === "waves" || bgParam === "clouds") {
-        return bgParam;
-      }
-      
-      const savedEffect = localStorage.getItem("vanta-effect");
-      if (savedEffect === "waves" || savedEffect === "clouds") {
-        return savedEffect;
-      }
-    }
-    return "waves"; // Default
-  });
+  const vantaRef = useRef<any>(null);
+  const idleHandle = useRef<number | null>(null);
+  const resizeHandler = useRef<() => void>();
+  const [mounted, setMounted] = useState(false);
+  const [debugMsg, setDebugMsg] = useState<string>("");
 
-  // Effect to save selection to localStorage
+  // single source of truth for accent theme config
+  const cfg = {
+    speed: 0.65,                // faster for cloud movement
+    skyColor: "0e1626",         // dark blue-black
+    cloudColor: "4273b9",       // accent blue
+    cloudShadowColor: "0a0e17", // deep shadow
+    overlayOpacity: 0.30,       // slightly reduced for visibility
+    zoom: 1.05,                 // slightly zoomed in
+  };
+
+  // Performance detection
+  const isMobile = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 1024 ||
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+  }, []);
+
+  /** clamp the renderer DPR after VANTA creates it */
+  const clampPixelRatio = useCallback(() => {
+    try {
+      const pr = Math.min(PIXEL_RATIO_CAP, window.devicePixelRatio || 1);
+      vantaRef.current?.renderer?.setPixelRatio?.(pr);
+    } catch {}
+  }, []);
+
+  /** speed controller (visible vs hidden / on-screen) */
+  const setSpeed = useCallback((s: number) => {
+    try {
+      vantaRef.current?.setOptions?.({ speed: s });
+    } catch {}
+  }, []);
+
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("vanta-effect", currentEffect);
+    setMounted(true);
+    if (!containerRef.current) {
+      console.warn("Container ref not available");
+      return;
     }
-  }, [currentEffect]);
 
-  useEffect(() => {
-    // Set a timeout to detect if the effect doesn't load
-    const timeoutId = setTimeout(() => {
-      if (!isLoaded) {
-        console.warn("Vanta effect didn't load within 5 seconds");
-        setDebugMessage("Loading timed out - using fallback");
-      }
-    }, 5000);
+    // Background base while loading
+    document.body.style.backgroundColor = "#0e1626";
 
-    // Force a black background while loading
-    document.body.style.backgroundColor = "#000";
+    // full Singleton guard for dev/HMR
+    if ((window as any).__vantaInstance?.destroy) {
+      try { (window as any).__vantaInstance.destroy(); } catch {}
+      (window as any).__vantaInstance = undefined;
+    }
+    if (vantaRef.current) {
+      try { vantaRef.current.destroy(); } catch {}
+      vantaRef.current = null;
+      containerRef.current.replaceChildren();
+    }
 
-    // Helper function to remove scripts to avoid conflicts
-    const removeExistingScripts = () => {
-      const scripts = ["three-js-script", "vanta-waves-script", "vanta-clouds-script"];
-      scripts.forEach(id => {
-        const script = document.getElementById(id);
-        if (script) {
-          script.remove();
-        }
-      });
-    };
-
-    // Helper function to load a script
-    const loadScript = (src: string, id: string) => {
-      return new Promise<void>((resolve, reject) => {
-        // Remove existing script if it exists
-        const existingScript = document.getElementById(id);
-        if (existingScript) {
-          existingScript.remove();
-        }
-
-        const script = document.createElement("script");
-        script.id = id;
-        script.src = src;
-        script.async = true;
-        script.onload = () => {
-          console.log(`Script loaded: ${id}`);
-          resolve();
-        };
-        script.onerror = (e) => {
-          console.error(`Script failed to load: ${id}`, e);
-          reject(new Error(`Failed to load ${src}`));
-        };
-        document.head.appendChild(script);
-      });
-    };
-
-    // Initialize Vanta effect
-    const initVantaEffect = async () => {
-      if (!containerRef.current) {
-        setDebugMessage("Error: Container ref not available");
-        return;
-      }
-
-      // First destroy any existing effect
-      if (vantaEffectRef.current) {
-        try {
-          vantaEffectRef.current.destroy();
-        } catch (e) {
-          console.error("Error destroying previous effect:", e);
-        }
-        vantaEffectRef.current = null;
-      }
-      
-      setDebugMessage(`Loading ${currentEffect} effect...`);
-      
+    // init (deferred to idle)
+    const init = async () => {
       try {
-        // Remove existing scripts to avoid conflicts
-        removeExistingScripts();
-        
-        // First load THREE.js
-        await loadScript(
-          "https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js", 
-          "three-js-script"
-        );
-        
-        // Small delay to ensure THREE is properly initialized
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Make sure THREE is globally available
-        if (typeof window.THREE === 'undefined') {
-          console.error("THREE not available on window after loading script");
-          setDebugMessage("Error: THREE not available");
+        setDebugMsg("Setting up THREE...");
+        (window as any).THREE = THREE;
+
+        // load script only once per effect type
+        const id = "vanta-clouds-script";
+        if (!document.getElementById(id)) {
+          setDebugMsg("Loading Vanta script...");
+          const s = document.createElement("script");
+          s.id = id;
+          // Use unpkg as primary, jsdelivr as backup
+          s.src = "https://unpkg.com/vanta@0.5.24/dist/vanta.clouds.min.js";
+          s.async = true;
+          
+          await new Promise<void>((res, rej) => {
+            s.onload = () => {
+              setDebugMsg("Vanta script loaded!");
+              res();
+            };
+            s.onerror = () => {
+              setDebugMsg("Primary CDN failed, trying backup...");
+              // If first CDN fails, try backup
+              const backupScript = document.createElement("script");
+              backupScript.id = id;
+              backupScript.src = "https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.clouds.min.js";
+              backupScript.async = true;
+              
+              backupScript.onload = () => {
+                setDebugMsg("Backup script loaded!");
+                res();
+              };
+              backupScript.onerror = () => rej(new Error("Both CDNs failed"));
+              document.head.appendChild(backupScript);
+            };
+            document.head.appendChild(s);
+          });
+          
+          // Allow time for script to initialize
+          await new Promise(r => setTimeout(r, 100));
+        }
+
+        if (!(window as any).VANTA) {
+          setDebugMsg("VANTA not available after loading script!");
           return;
         }
-        
-        // Then load the appropriate Vanta effect
-        await loadScript(
-          `https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.${currentEffect}.min.js`, 
-          `vanta-${currentEffect}-script`
-        );
 
-        // Small delay to ensure VANTA is properly initialized
-        await new Promise(resolve => setTimeout(resolve, 100));
+        setDebugMsg("Creating effect...");
+        const mobile = isMobile();
+        const prefersReduced =
+          window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+        const perfMode = mobile || prefersReduced;
 
-        // Ensure Vanta is available
-        if (!window.VANTA) {
-          throw new Error("Vanta not loaded after script inclusion");
+        // Make sure container is correctly sized before initialization
+        if (containerRef.current) {
+          // Force container to have size
+          if (containerRef.current.clientHeight < 100 || containerRef.current.clientWidth < 100) {
+            containerRef.current.style.minHeight = '100vh';
+            containerRef.current.style.minWidth = '100vw';
+          }
         }
 
-        setDebugMessage(`Creating ${currentEffect} effect...`);
-
-        // Create the Vanta effect with the appropriate type
-        const options = {
+        // Create effect - with more visible settings
+        vantaRef.current = (window as any).VANTA.CLOUDS({
           el: containerRef.current,
-          THREE: window.THREE,
-          mouseControls: true,
-          touchControls: true,
+          THREE,
+          mouseControls: false,
+          touchControls: false,
           gyroControls: false,
-          minHeight: 200.0,
-          minWidth: 200.0,
+          minHeight: 200,
+          minWidth: 200,
           scale: 1.0,
-          scaleMobile: 1.0,
-          backgroundAlpha: 0.0 // Transparent background
+          scaleMobile: perfMode ? 0.5 : 0.8,
+          quantity: perfMode ? 3 : 4,         // Fewer clouds on mobile
+          backgroundAlpha: 0.0,
+          backgroundColor: 0x000000,
+
+          skyColor: parseInt(cfg.skyColor, 16),
+          cloudColor: parseInt(cfg.cloudColor, 16),
+          cloudShadowColor: parseInt(cfg.cloudShadowColor, 16),
+          sunColor: parseInt(cfg.skyColor, 16),
+          sunGlareColor: parseInt(cfg.skyColor, 16),
+          sunlightColor: parseInt(cfg.skyColor, 16),
+
+          speed: perfMode ? Math.max(0.15, cfg.speed * 0.4) : cfg.speed,
+          zoom: cfg.zoom,
+        });
+
+        if (!vantaRef.current) {
+          setDebugMsg("Failed to create Vanta effect!");
+          return;
+        }
+
+        setDebugMsg("Effect created successfully!");
+        (window as any).__vantaInstance = vantaRef.current;
+
+        // clamp DPR now and on resize
+        clampPixelRatio();
+        resizeHandler.current = () => clampPixelRatio();
+        window.addEventListener("resize", resizeHandler.current!, { passive: true });
+
+        // pause/slow when hidden
+        const onVis = () => {
+          if (document.hidden) setSpeed(TARGET_FPS_HIDDEN);
+          else setSpeed(perfMode ? Math.max(0.15, cfg.speed * 0.4) : cfg.speed);
         };
+        document.addEventListener("visibilitychange", onVis);
 
-        // Updated colors to match color scheme
-        if (currentEffect === "waves") {
-          vantaEffectRef.current = window.VANTA.WAVES({
-            ...options,
-            // Updated to match modern portfolio color scheme
-            color: 0x3b82f6, // Tailwind blue-500
-            waveHeight: 15.0,
-            waveSpeed: 1.0,
-            zoom: 1.0,
-            shininess: 35
-          });
-        } else if (currentEffect === "clouds") {
-          vantaEffectRef.current = window.VANTA.CLOUDS({
-            ...options,
-            skyColor: 0x1e293b, // Tailwind slate-800
-            cloudColor: 0x60a5fa, // Tailwind blue-400
-            cloudShadowColor: 0x0f172a, // Tailwind slate-900
-            speed: 0.6
-          });
+        // slow when hero not on screen
+        let io: IntersectionObserver | undefined;
+        if (HERO_ONLY) {
+          io = new IntersectionObserver(
+            (entries) => {
+              const onScreen = entries.some((e) => e.isIntersecting);
+              setSpeed(
+                onScreen
+                  ? (perfMode ? Math.max(0.15, cfg.speed * 0.4) : cfg.speed)
+                  : cfg.speed * SPEED_DAMP_OFFSCREEN
+              );
+            },
+            { rootMargin: "0px 0px -20% 0px", threshold: 0.15 }
+          );
+          io.observe(containerRef.current!);
         }
-        
-        setIsLoaded(true);
-        setDebugMessage(`${currentEffect.toUpperCase()} loaded successfully!`);
-      } catch (error: any) {
-        console.error("Vanta initialization error:", error);
-        setDebugMessage(`Error initializing: ${error?.message || 'Unknown error'}`);
+
+        // cleanup
+        return () => {
+          document.removeEventListener("visibilitychange", onVis);
+          if (resizeHandler.current) {
+            window.removeEventListener("resize", resizeHandler.current);
+          }
+          io?.disconnect();
+        };
+      } catch (e) {
+        // More explicit error handling
+        console.error("Error initializing Vanta:", e);
+        setDebugMsg(`Error: ${e instanceof Error ? e.message : "Unknown error"}`);
       }
     };
 
-    // Run the initialization
-    initVantaEffect();
+    // Start initialization immediately (no defer) to see if that helps
+    init();
 
-    // Cleanup function
     return () => {
-      clearTimeout(timeoutId);
-      
-      if (vantaEffectRef.current) {
-        try {
-          vantaEffectRef.current.destroy();
-          vantaEffectRef.current = null;
-        } catch (error) {
-          console.warn("Error destroying Vanta effect:", error);
-        }
+      if (idleHandle.current) {
+        (window as any).cancelIdleCallback?.(idleHandle.current);
+        clearTimeout(idleHandle.current);
+        idleHandle.current = null;
+      }
+      if (vantaRef.current) {
+        try { vantaRef.current.destroy(); } catch {}
+        vantaRef.current = null;
+      }
+      containerRef.current?.replaceChildren();
+      if (resizeHandler.current) {
+        window.removeEventListener("resize", resizeHandler.current);
       }
     };
-  }, [currentEffect, isLoaded]); // Re-run when effect type changes
+    // deps intentionally empty (we don't want to re-create on every render)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <>
-      {/* Debug message in development */}
-      {process.env.NODE_ENV !== "production" && (
-        <div className="fixed top-2 left-2 z-[999] bg-black/70 text-white text-xs px-3 py-2 rounded shadow-lg">
-          Status: {debugMessage}
-          <br />
-          Loaded: {isLoaded ? "✓" : "✗"}
+      {/* Debug overlay in development only */}
+      {process.env.NODE_ENV !== 'production' && debugMsg && (
+        <div 
+          className="fixed top-2 left-2 z-50 bg-black/70 text-white text-xs px-2 py-1 rounded">
+          Status: {debugMsg}
         </div>
       )}
+    
+      {/* base gradient (very cheap) */}
+      <div
+        className="fixed inset-0 z-[-3]"
+        style={{
+          background:
+            "linear-gradient(180deg, #0e1626 0%, #0a0e17 100%)",
+        }}
+      />
 
-      {/* Effect switcher (dev-only) */}
-      {process.env.NODE_ENV !== "production" && (
-        <div className="fixed top-2 right-2 z-[999] bg-black/70 text-white text-xs px-3 py-2 rounded shadow-lg">
-          <div className="mb-1">Background Effect:</div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setCurrentEffect("waves")}
-              className={`px-2 py-1 rounded ${
-                currentEffect === "waves" 
-                  ? "bg-blue-500 text-white" 
-                  : "bg-gray-700 hover:bg-gray-600"
-              }`}
-            >
-              Waves
-            </button>
-            <button
-              onClick={() => setCurrentEffect("clouds")}
-              className={`px-2 py-1 rounded ${
-                currentEffect === "clouds" 
-                  ? "bg-blue-500 text-white" 
-                  : "bg-gray-700 hover:bg-gray-600"
-              }`}
-            >
-              Clouds
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Fallback gradient background */}
-      <div className="fixed inset-0 z-[-2] bg-gradient-to-b from-slate-800 to-black" />
-      
-      {/* Vanta container - improved z-index */}
+      {/* VANTA host – hero only or full screen */}
       <div
         ref={containerRef}
-        className="fixed inset-0 z-[-1] pointer-events-none"
-        style={{ zIndex: -1 }}
+        className={`fixed left-0 right-0 z-[-2] pointer-events-none ${
+          HERO_ONLY ? "top-0 h-[80svh]" : "inset-0"
+        }`}
+        style={{ 
+          contain: "layout paint size", // small perf hint
+          minHeight: "200px" // Ensure minimum height for effect
+        }}
       />
+
+      {/* subtle vignette overlay */}
+      <div
+        className={`fixed left-0 right-0 z-[-1] pointer-events-none ${
+          HERO_ONLY ? "top-0 h-[80svh]" : "inset-0"
+        }`}
+        style={{
+          backgroundImage:
+            "radial-gradient(120% 80% at 50% 10%, rgba(10,14,23,0) 0%, rgba(10,14,23,0.2) 40%, rgba(10,14,23,0.45) 100%)",
+          opacity: cfg.overlayOpacity,
+        }}
+      />
+
+      {/* smooth fade from hero canvas into static gradient (hero mode only) */}
+      {HERO_ONLY && (
+        <div className="fixed top-[80svh] left-0 right-0 bottom-0 z-[-2] bg-gradient-to-b from-[#0a0e17] to-[#0a0e17]" />
+      )}
     </>
   );
 }
 
-// Add TypeScript definitions for the VANTA global
+// types for window globals
 declare global {
   interface Window {
-    VANTA?: {
-      WAVES: (opts: any) => any;
-      CLOUDS: (opts: any) => any;
-    };
-    THREE?: any;
+    VANTA?: { CLOUDS: (o: any) => any };
+    THREE?: typeof THREE;
+    __vantaInstance?: { destroy: () => void } | undefined;
+    requestIdleCallback?: (cb: () => void, opts?: { timeout?: number }) => number;
+    cancelIdleCallback?: (id: number) => void;
   }
 }
