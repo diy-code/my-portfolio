@@ -4,9 +4,11 @@ import ProjectCard from "@/components/ProjectCard";
 import { projects } from "@/data/projects";
 import dynamic from "next/dynamic";
 
-const InteractiveBackground = dynamic(() => import("./components/InteractiveBackground"), { ssr: false });
-const CodeStream = dynamic(() => import("./components/CodeStream"), { ssr: false });
-const HeroCube = dynamic(() => import("@/components/HeroCube"), { ssr: false });
+// Comment out the NeuralBackground
+// const NeuralBackground = dynamic(() => import("./components/NeuralBackground"), { ssr: false });
+
+// Import the VantaBackground instead
+const VantaBackground = dynamic(() => import("./components/VantaBackground"), { ssr: false });
 
 /** ---- קל לקסטומיזציה ---- */
 const content = {
@@ -185,12 +187,43 @@ const styles = `
 export default function UltraModernPortfolio() {
   const sections = ["home", "projects", "wins", "contact"] as const;
   const active = useActive(sections as unknown as string[]);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  // Add density control for mobile
+  const [maxDensity] = useState(() => 
+    typeof window !== 'undefined' ? (window.innerWidth < 768 ? 0.6 : 1) : 1
+  );
+
+  // Optimized scroll handler with requestAnimationFrame
+  useEffect(() => {
+    let ticking = false;
+    
+    const calc = () => {
+      const max = document.body.scrollHeight - window.innerHeight || 1;
+      setScrollProgress(Math.min(window.scrollY / max, 1));
+      ticking = false;
+    };
+    
+    const onScroll = () => { 
+      if (!ticking) { 
+        ticking = true; 
+        requestAnimationFrame(calc); 
+      } 
+    };
+    
+    window.addEventListener('scroll', onScroll, { passive: true });
+    calc(); // Set initial value
+    
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
-      <InteractiveBackground />
-      <CodeStream />
+      
+      {/* Replace NeuralBackground with VantaBackground */}
+      {/* <NeuralBackground density={maxDensity} /> */}
+      <VantaBackground />
+
       <div className="min-h-screen relative overflow-hidden">
         {/* Ultra-Modern Glass Header */}
         <header className="fixed top-0 left-0 right-0 z-50 glass-header">
@@ -225,7 +258,7 @@ export default function UltraModernPortfolio() {
 
         <main className="pt-20 md:pt-24 relative z-10">
           {/* HERO */}
-         <section id="home" className="scroll-mt-32 px-8 md:px-10 py-16 md:py-24 -mt-2 relative section-glow scroll-reveal">
+          <section id="home" className="scroll-mt-32 px-8 md:px-10 py-16 md:py-24 -mt-2 relative section-glow scroll-reveal">
             <div className="max-w-7xl mx-auto text-center relative z-10">
               <div className="relative inline-block mb-16 floating">
                 <h1 className="text-6xl md:text-9xl font-black tracking-tighter text-white mb-10 leading-none">
@@ -234,29 +267,7 @@ export default function UltraModernPortfolio() {
                   ))}
                 </h1>
 
-                {/* Cube tucked to the top-right of the name */}
-                <div
-                  className="
-                    absolute -top-10 right-[-72px]
-                    md:-top-14 md:right-[-120px]
-                    pointer-events-none md:pointer-events-auto
-                    z-0 md:z-10
-                  "
-                >
-                  <HeroCube
-                    accent="#60a5fa"
-                    textures={[
-                      "/logos/cpp.svg",
-                      "/logos/python.svg",
-                      "/logos/csharp.svg",
-                      "/logos/java.svg",
-                      "/logos/sql.svg",
-                      "/logos/javascript.svg"
-                    ]}
-                    size={1.8}
-                    speed={0.15}
-                  />
-                </div>
+                {/* REMOVE the cube here - we now have the neural background as a full-page element */}
 
                 <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-[#60a5fa] to-transparent mx-auto mb-8 enhanced-glow"></div>
                 <p className="text-2xl md:text-3xl text-gray-300 font-light mb-4 tracking-wide scroll-reveal">
@@ -274,11 +285,7 @@ export default function UltraModernPortfolio() {
               </div>
 
               {/* soft ambient halo behind the name+cube */}
-              <div className="pointer-events-none absolute inset-0 -z-10">
-                <div className="absolute left-1/2 top-10 -translate-x-1/2 w-[60vw] h-[60vw] md:w-[42vw] md:h-[42vw] rounded-full
-                            bg-[radial-gradient(circle_at_center,rgba(96,165,250,0.22),transparent_60%)]" />
-              </div>
-
+              
               <div className="flex flex-col sm:flex-row gap-6 justify-center mt-10">
                 <a href="#projects" className="btn-primary">Explore My Work</a>
                 {content.resume !== "#" && (
