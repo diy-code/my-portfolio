@@ -1,0 +1,51 @@
+/* Glass card matches your site’s palette */
+.glass-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* Pills */
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: #e5e7eb;
+  transition: border-color .25s ease, background .25s ease, box-shadow .25s ease, transform .2s ease;
+  will-change: transform;
+  outline: none;
+}
+.skill-chip:hover,
+.skill-chip:focus-visible {
+  background: rgba(96, 165, 250, 0.10);           /* #60A5FA */
+  border-color: rgba(96, 165, 250, 0.35);
+  box-shadow: 0 8px 24px -10px rgba(96, 165, 250, 0.35);
+}
+.skill-chip:focus-visible {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.8);  /* focus ring */
+}
+
+/* Small status tag inside chip */
+.status-tag {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 11px;
+  line-height: 1;
+  border-radius: 999px;
+  color: #93c5fd;                                 /* blue-300 */
+  background: rgba(30, 64, 175, 0.25);            /* blue-800 ~ twilight */
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+/* Title gradient already defined on your site, included for completeness */
+.gradient-text {
+  background: linear-gradient(120deg, #0A84FF 0%, #62B2FF 55%, #ffffff 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

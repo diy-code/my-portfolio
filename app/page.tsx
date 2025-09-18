@@ -3,11 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import ProjectCard from "@/components/ProjectCard";
 import { projects } from "@/data/projects";
 import dynamic from "next/dynamic";
+import Skills from '../components/Skills';
 
-// Comment out the NeuralBackground
-// const NeuralBackground = dynamic(() => import("./components/NeuralBackground"), { ssr: false });
-
-// Import the VantaBackground instead
+// Import the VantaBackground
 const VantaBackground = dynamic(() => import("./components/VantaBackground"), { ssr: false });
 
 /** ---- קל לקסטומיזציה ---- */
@@ -20,36 +18,37 @@ const content = {
   github: "#",
   linkedin: "#",
   resume: "#",
-  projects: [
-    { 
-      name: "MetaGym", 
-      blurb: "Flutter + FastAPI fitness ecosystem with comprehensive admin workflows and user engagement tracking.", 
-      tech: "Flutter · Python · FastAPI · Redis",
-      repo: "#", 
-      demo: "#" 
-    },
-    { 
-      name: "MissionForce 2025", 
-      blurb: ".NET 8 WPF volunteer management system featuring N-tier architecture and Observer pattern implementation.", 
-      tech: ".NET 8 · WPF · C# · Entity Framework",
-      repo: "#", 
-      demo: "#" 
-    },
-    { 
-      name: "HR – Retirement Home", 
-      blurb: "PostgreSQL-powered system with advanced views, triggers, procedures, and medical system integration.", 
-      tech: "PostgreSQL · Advanced SQL · Medical APIs",
-      repo: "#", 
-      demo: "#" 
-    },
-    { 
-      name: "Java Ray Tracer", 
-      blurb: "Physically-based rendering engine with BVH optimization, reflections, refractions, and comprehensive TDD.", 
-      tech: "Java · PBR · BVH · JUnit · Performance",
-      repo: "#", 
-      demo: "#" 
-    },
-  ],
+  about: {
+    bio: "I'm a passionate computer science student with a deep interest in systems architecture, algorithm optimization, and building performance-critical applications. My academic journey has been focused on the intersection of theory and practical implementation.",
+    education: [
+      { degree: "B.Sc Computer Science", institution: "Jerusalem College of Technology", year: "2021-present" },
+      { degree: "Advanced Programming Certification", institution: "Tech Leaders Academy", year: "2020" },
+    ],
+    interests: ["Distributed Systems", "Algorithm Design", "Scientific Computing", "System Architecture", "Database Optimization"]
+  },
+  skills: {
+    languages: [
+      { name: "C++", level: 95 },
+      { name: "Python", level: 90 },
+      { name: "C#/.NET", level: 85 },
+      { name: "SQL", level: 80 },
+      { name: "Java", level: 75 },
+      { name: "JavaScript/TypeScript", level: 70 },
+    ],
+    frameworks: ["ASP.NET Core", "FastAPI", "Entity Framework", "React", "Flutter", "WPF"],
+    tools: ["Docker", "Git", "PostgreSQL", "Redis", "Azure", "AWS", "CI/CD"],
+    concepts: ["Multithreading", "Test-Driven Development", "Clean Architecture", "SOLID Principles", "Design Patterns"]
+  },
+  approach: {
+    philosophy: "I approach software development with a blend of precision engineering and creative problem-solving. Every line of code should be purposeful, maintainable, and aligned with business objectives.",
+    process: [
+      { phase: "Research & Analysis", description: "Deep understanding of requirements and constraints" },
+      { phase: "Architecture Design", description: "Planning scalable and maintainable system structures" },
+      { phase: "Test-Driven Implementation", description: "Building with quality and correctness as first priorities" },
+      { phase: "Iterative Refinement", description: "Continuous improvement through feedback and metrics" },
+    ],
+    values: ["Performance Optimization", "Clean Code", "Reliability", "Security by Design", "User-Centered Solutions"]
+  },
   hackathons: [
     { place: "🥇", event: "CampAIgn Matcher", desc: "Advanced OSINT intelligence gathering tool" },
     { place: "🥉", event: "MissionForce 2025", desc: "Comprehensive volunteer coordination system" },
@@ -182,46 +181,72 @@ const styles = `
   .section-glow::before {
     background:radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
   }
+  
+  /* Skill bars */
+  .skill-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .skill-progress {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-soft));
+    border-radius: 4px;
+  }
+  
+  /* Timeline for approach section */
+  .timeline-item {
+    position: relative;
+    padding-left: 28px;
+  }
+  .timeline-item:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px rgba(10,132,255,0.6);
+  }
+  .timeline-item:after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 30px;
+    bottom: -20px;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent-soft), transparent);
+  }
+  .timeline-item:last-child:after {
+    display: none;
+  }
 `;
 
 export default function UltraModernPortfolio() {
-  const sections = ["home", "projects", "wins", "contact"] as const;
+  // Updated sections array to include all sections
+  const sections = ["home", "about", "projects", "skills", "wins", "approach", "contact"] as const;
   const active = useActive(sections as unknown as string[]);
-  const [scrollProgress, setScrollProgress] = useState(0);
   // Add density control for mobile
   const [maxDensity] = useState(() => 
     typeof window !== 'undefined' ? (window.innerWidth < 768 ? 0.6 : 1) : 1
   );
 
-  // Optimized scroll handler with requestAnimationFrame
-  useEffect(() => {
-    let ticking = false;
-    
-    const calc = () => {
-      const max = document.body.scrollHeight - window.innerHeight || 1;
-      setScrollProgress(Math.min(window.scrollY / max, 1));
-      ticking = false;
-    };
-    
-    const onScroll = () => { 
-      if (!ticking) { 
-        ticking = true; 
-        requestAnimationFrame(calc); 
-      } 
-    };
-    
-    window.addEventListener('scroll', onScroll, { passive: true });
-    calc(); // Set initial value
-    
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+
+  const navigationItems = [
+    { id: "contact", label: "Contact" },
+    { id: "approach", label: "Approach" },
+    { id: "projects", label: "Projects" },
+    { id: "about", label: "About" },
+    { id: "home", label: "Home" }
+  ];
 
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
       
-      {/* Replace NeuralBackground with VantaBackground */}
-      {/* <NeuralBackground density={maxDensity} /> */}
       <VantaBackground />
 
       <div className="min-h-screen relative overflow-hidden">
@@ -231,13 +256,9 @@ export default function UltraModernPortfolio() {
             <div className="text-2xl font-bold tracking-tight text-white enhanced-glow">
               YB
             </div>
-            <nav className="hidden md:flex items-center space-x-12">
-              {[
-                { id: "home", label: "Home" },
-                { id: "projects", label: "Projects" },
-                { id: "wins", label: "Achievements" },
-                { id: "contact", label: "Contact" },
-              ].map(item => (
+            {/* Desktop Navigation - Updated */}
+            <nav className="hidden md:flex items-center space-x-8">
+              {navigationItems.map(item => (
                 <a
                   key={item.id}
                   href={`#${item.id}`}
@@ -267,8 +288,6 @@ export default function UltraModernPortfolio() {
                   ))}
                 </h1>
 
-                {/* REMOVE the cube here - we now have the neural background as a full-page element */}
-
                 <div className="w-24 h-[2px] bg-gradient-to-r from-transparent via-[#60a5fa] to-transparent mx-auto mb-8 enhanced-glow"></div>
                 <p className="text-2xl md:text-3xl text-gray-300 font-light mb-4 tracking-wide scroll-reveal">
                   {content.title}
@@ -283,8 +302,6 @@ export default function UltraModernPortfolio() {
                   {content.availability}
                 </p>
               </div>
-
-              {/* soft ambient halo behind the name+cube */}
               
               <div className="flex flex-col sm:flex-row gap-6 justify-center mt-10">
                 <a href="#projects" className="btn-primary">Explore My Work</a>
@@ -302,10 +319,63 @@ export default function UltraModernPortfolio() {
             </div>
           </section>
 
-          {/* FLOATING PROJECTS SECTION */}
-          <section id="projects" className="scroll-mt-24 px-8 py-32 relative section-glow scroll-reveal">
+          {/* ABOUT SECTION (NEW) */}
+          <section id="about" className="scroll-mt-24 px-8 py-32 relative section-glow scroll-reveal">
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="text-center mb-24 scroll-reveal">
+                <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight enhanced-glow">
+                  About <span className="gradient-text">Me</span>
+                </h2>
+                <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                  Passionate about building innovative solutions and solving complex problems
+                </p>
+              </div>
+
+              <div className="flex flex-col lg:flex-row gap-16 items-start">
+                <div className="lg:w-1/2 glass-card p-8 scroll-reveal">
+                  <h3 className="text-3xl font-bold text-white mb-6">Bio</h3>
+                  <p className="text-gray-300 leading-relaxed mb-8">
+                    {content.about.bio}
+                  </p>
+                  
+                  <h4 className="text-xl font-bold text-white mb-4">Education</h4>
+                  <div className="space-y-6 mb-8">
+                    {content.about.education.map((edu, index) => (
+                      <div key={index} className="flex flex-col">
+                        <span className="text-[#60a5fa] font-semibold">{edu.degree}</span>
+                        <span className="text-gray-300">{edu.institution}</span>
+                        <span className="text-gray-400 text-sm">{edu.year}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="lg:w-1/2 glass-card p-8 scroll-reveal">
+                  <h3 className="text-3xl font-bold text-white mb-6">Areas of Interest</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {content.about.interests.map((interest, index) => (
+                      <div key={index} className="glass-card p-4 text-center">
+                        <p className="text-gray-200">{interest}</p>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="mt-8 pt-8 border-t border-white/10">
+                    <h4 className="text-xl font-bold text-white mb-4">Personal Philosophy</h4>
+                    <p className="text-gray-300 leading-relaxed">
+                      I believe in building systems that are not just functional, but elegant, maintainable, and efficient. 
+                      Every project is an opportunity to create something that makes a genuine difference.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* PROJECTS SECTION - REFACTORED */}
+          <section id="projects" className="scroll-mt-24 py-16 px-6 md:px-12 relative bg-[#0a0e17]">
+            <div className="max-w-7xl mx-auto relative z-10">
+              <div className="text-center mb-16 scroll-reveal">
                 <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight enhanced-glow">
                   Featured <span className="gradient-text">Projects</span>
                 </h2>
@@ -314,36 +384,94 @@ export default function UltraModernPortfolio() {
                 </p>
               </div>
 
-              <div className="grid gap-12 lg:gap-16">
-                {projects.filter(p => !p.hidden).map((p, i) => (
-                  <ProjectCard
-                    key={p.name}
-                    name={p.name}
-                    blurb={p.blurb}
-                    tech={p.tech}
-                    repo={p.repo}
-                    demo={p.demo}
-                    images={[
-                      p.images?.[0] || p.cover || "/placeholder-project.jpg", 
-                      p.images?.[1] || p.cover || "/placeholder-project.jpg"
-                    ]}
-                    variant={i % 2 === 0 ? "image" : "classic"}
-                    tokens={{
-                      radius: "rounded-3xl",
-                      border: "border border-white/10",
-                      bg: "bg-white/5",
-                      glow: "hover:shadow-[0_12px_40px_-12px_rgba(96,165,250,.45)]",
-                      accent: "text-[#60a5fa]",
-                    }}
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {projects.filter(p => !p.hidden).map((project) => (
+                  <div 
+                    key={project.name} 
+                    className="rounded-2xl border border-gray-800 bg-gray-900/30 shadow-lg shadow-black/40 overflow-hidden transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.02]"
+                  >
+                    <div className="aspect-video w-full relative overflow-hidden">
+                      <img 
+                        src={project.images?.[0] || project.cover || "/placeholder-project.jpg"} 
+                        alt={project.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    
+                    <div className="p-6">
+                      <h3 className="text-2xl font-bold text-white mb-3">{project.name}</h3>
+                      
+                      <p className="text-gray-400 mb-4">
+                        {project.blurb}
+                      </p>
+                      
+                      <div className="flex flex-wrap gap-2 mb-5">
+                        {project.tech
+                          ? typeof project.tech === 'string' 
+                            ? project.tech.split('·').map((tech, index) => (
+                                <span 
+                                  key={index} 
+                                  className="px-3 py-1 text-xs font-medium rounded-full bg-blue-500/20 text-blue-300"
+                                >
+                                  {tech.trim()}
+                                </span>
+                              ))
+                            : Array.isArray(project.tech)
+                              ? project.tech.map((tech, index) => (
+                                  <span 
+                                    key={index} 
+                                    className="px-3 py-1 text-xs font-medium rounded-full bg-blue-500/20 text-blue-300"
+                                  >
+                                    {tech}
+                                  </span>
+                                ))
+                              : null
+                          : null
+                        }
+                      </div>
+                      
+                      <div className="flex gap-4 mt-4">
+                        {project.repo !== "#" && (
+                          <a 
+                            href={project.repo} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.17 6.839 9.49.5.09.682-.217.682-.48 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.03-2.682-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.022A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.29 2.747-1.022 2.747-1.022.546 1.377.203 2.394.1 2.647.64.699 1.026 1.591 1.026 2.682 0 3.841-2.337 4.687-4.565 4.934.359.31.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0022 12C22 6.477 17.523 2 12 2z" />
+                            </svg>
+                            Repository
+                          </a>
+                        )}
+                        
+                        {project.demo !== "#" && (
+                          <a 
+                            href={project.demo} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-sm font-medium text-blue-400 hover:text-blue-300 flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M15.75 2H8.25C7.00736 2 6 3.00736 6 4.25V19.75C6 20.9926 7.00736 22 8.25 22H15.75C16.9926 22 18 20.9926 18 19.75V4.25C18 3.00736 16.9926 2 15.75 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                              <path d="M12 18H12.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                            Live Demo
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
           </section>
+          
+          <Skills />
 
-          {/* PREMIUM ACHIEVEMENTS SECTION */}
+          {/* ACHIEVEMENTS SECTION */}
           <section id="wins" className="scroll-mt-24 px-8 py-32 relative scroll-reveal">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#171717] via-black to-[#0a0a0a]"></div>
+            <div className="absolute inset-0 z-0 bg-gradient-to-br from-[#171717] via-black to-[#0a0a0a]"></div>
             <div className="max-w-7xl mx-auto relative z-10">
               <div className="text-center mb-24 scroll-reveal">
                 <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight enhanced-glow">
@@ -381,7 +509,54 @@ export default function UltraModernPortfolio() {
             </div>
           </section>
 
-          {/* MAGNETIC CONTACT SECTION */}
+          {/* APPROACH SECTION (NEW) */}
+          <section id="approach" className="scroll-mt-24 px-8 py-32 relative section-glow scroll-reveal">
+            <div className="max-w-7xl mx-auto relative z-10">
+              <div className="text-center mb-24 scroll-reveal">
+                <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight enhanced-glow">
+                  My <span className="gradient-text">Approach</span>
+                </h2>
+                <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                  A methodical process designed to deliver exceptional results
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-16">
+                <div className="glass-card p-8 scroll-reveal">
+                  <h3 className="text-3xl font-bold text-white mb-8">Philosophy</h3>
+                  <p className="text-gray-300 leading-relaxed text-lg mb-8">
+                    {content.approach.philosophy}
+                  </p>
+                  
+                  <h4 className="text-xl font-bold text-white mb-6">Core Values</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {content.approach.values.map((value, index) => (
+                      <div 
+                        key={index}
+                        className="glass-card p-4 text-center hover:border-[#60a5fa]/40 transition-colors duration-300"
+                      >
+                        <span className="text-gray-300">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="glass-card p-8 scroll-reveal">
+                  <h3 className="text-3xl font-bold text-white mb-8">Development Process</h3>
+                  <div className="space-y-12">
+                    {content.approach.process.map((step, index) => (
+                      <div key={index} className="timeline-item pl-8">
+                        <h4 className="text-xl font-bold text-[#60a5fa] mb-2">{step.phase}</h4>
+                        <p className="text-gray-300">{step.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* CONTACT SECTION */}
           <section id="contact" className="scroll-mt-24 px-8 py-32 section-glow relative scroll-reveal">
             <div className="max-w-5xl mx-auto text-center relative z-10">
               <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight floating enhanced-glow">
@@ -408,24 +583,19 @@ export default function UltraModernPortfolio() {
           </section>
         </main>
 
-        {/* FLOATING MOBILE NAVIGATION */}
+        {/* FLOATING MOBILE NAVIGATION - UPDATED */}
         <nav className="md:hidden fixed bottom-6 left-4 right-4 z-50 scroll-reveal">
-          <div className="glass-header rounded-2xl p-2">
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { id: "home", label: "Home" },
-                { id: "projects", label: "Work" },
-                { id: "wins", label: "Wins" },
-                { id: "contact", label: "Contact" },
-              ].map((item) => {
+          <div className="glass-header rounded-2xl p-2 overflow-x-auto">
+            <div className="flex justify-between whitespace-nowrap">
+              {navigationItems.map((item) => {
                 const isActive = active === item.id;
                 return (
                   <a
                     key={item.id}
                     href={`#${item.id}`}
-                    className={`text-center py-3 px-2 rounded-xl text-xs font-bold transition-all duration-300 ${
+                    className={`text-center py-3 px-5 mx-1 rounded-xl text-xs font-bold transition-all duration-300 ${
                       isActive
-                        ? "bg-[#60a5fa] text-black shadow-lg scale-105"
+                        ? "bg-[#60a5fa] text-black shadow-lg"
                         : "text-gray-400 hover:text-white hover:bg-white/5"
                     }`}
                   >

@@ -3,9 +3,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export const metadata = {
-  title: "Daniel Pilant — Portfolio",
+  title: "Yitshac Brody — Portfolio",
   description: "Building products. Leading communities. Learning endlessly.",
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "/y-icon.ico" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
