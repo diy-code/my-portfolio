@@ -5,6 +5,24 @@ import dynamic from "next/dynamic";
 import Skills from '../components/Skills';
 import ContactSection from '../components/ContactSection';
 
+// …existing imports
+import Image from "next/image"; // <-- add this
+
+type UIProject = {
+  name: string;
+  images?: string[];
+  cover?: string;
+  blurb?: string;
+  tech?: string | string[];
+  repo?: string;
+  demo?: string;
+  hidden?: boolean;
+};
+
+// Safely type the data coming from "@/data/projects"
+const typedProjects = projects as UIProject[];
+
+
 // Import the VantaBackground
 const VantaBackground = dynamic(() => import("./components/VantaBackground"), { ssr: false });
 
@@ -176,10 +194,6 @@ export default function UltraModernPortfolio() {
   // Updated sections array to include all sections
   const sections = ["home", "about", "projects", "skills", "wins", "contact"] as const;
   const active = useActive(sections as unknown as string[]);
-  // Add density control for mobile
-  const [maxDensity] = useState(() => 
-    typeof window !== 'undefined' ? (window.innerWidth < 768 ? 0.6 : 1) : 1
-  );
 
 
   const navigationItems = [
@@ -332,17 +346,22 @@ export default function UltraModernPortfolio() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {projects.filter(p => !p.hidden).map((project) => (
+                {typedProjects.filter(p => !p.hidden).map((project) => (
                   <div 
                     key={project.name} 
                     className="rounded-2xl border border-gray-800 bg-gray-900/30 shadow-lg shadow-black/40 overflow-hidden transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.02]"
                   >
                     <div className="aspect-video w-full relative overflow-hidden">
-                      <img 
-                        src={project.images?.[0] || project.cover || "/placeholder-project.jpg"} 
-                        alt={project.name} 
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="aspect-video w-full relative overflow-hidden">
+          <Image
+            src={project.images?.[0] || project.cover || "/placeholder-project.jpg"}
+            alt={project.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 50vw"
+            unoptimized
+          />
+        </div>
                     </div>
                     
                     <div className="p-6">
@@ -353,28 +372,23 @@ export default function UltraModernPortfolio() {
                       </p>
                       
                       <div className="flex flex-wrap gap-2 mb-5">
-                        {project.tech
-                          ? typeof project.tech === 'string' 
-                            ? project.tech.split('·').map((tech, index) => (
-                                <span 
-                                  key={index} 
-                                  className="px-3 py-1 text-xs font-medium rounded-full bg-blue-500/20 text-blue-300"
-                                >
-                                  {tech.trim()}
-                                </span>
-                              ))
-                            : Array.isArray(project.tech)
-                              ? project.tech.map((tech, index) => (
-                                  <span 
-                                    key={index} 
-                                    className="px-3 py-1 text-xs font-medium rounded-full bg-blue-500/20 text-blue-300"
-                                  >
-                                    {tech}
-                                  </span>
-                                ))
-                              : null
-                          : null
-                        }
+                        {(() => {
+                          const raw = project.tech;
+                          const techList: string[] = Array.isArray(raw)
+                            ? raw
+                            : typeof raw === "string"
+                              ? raw.split("·").map((s) => s.trim()).filter(Boolean)
+                              : [];
+
+                          return techList.map((tech: string, index: number) => (
+                            <span
+                              key={`${project.name}-tech-${index}`}
+                              className="px-3 py-1 text-xs font-medium rounded-full bg-blue-500/20 text-blue-300"
+                            >
+                              {tech}
+                            </span>
+                          ));
+                        })()}
                       </div>
                       
                       <div className="flex gap-4 mt-4">
