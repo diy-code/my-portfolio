@@ -109,6 +109,8 @@ function SkillGroup({ title, items }: { title: string; items: Skill[] }) {
   );
 }
 
+type TechStackIconName = string;
+
 function SkillPill({ skill }: { skill: Skill }) {
   return (
     <span
@@ -122,7 +124,7 @@ function SkillPill({ skill }: { skill: Skill }) {
       <span className={`inline-block w-2 h-2 rounded-full ${levelDot[skill.level]}`} />
       {skill.icon && (
         <span className="inline-flex items-center justify-center w-4 h-4 shrink-0">
-          <StackIcon name={skill.icon as any} variant="dark" className="w-4 h-4" />
+          <StackIcon name={skill.icon as TechStackIconName} variant="dark" className="w-4 h-4" />
         </span>
       )}
       <span className="whitespace-nowrap">{skill.label}</span>

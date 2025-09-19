@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import ProjectCard from "@/components/ProjectCard";
 import { projects } from "@/data/projects";
 import dynamic from "next/dynamic";
 import Skills from '../components/Skills';
+import ContactSection from '../components/ContactSection';
 
 // Import the VantaBackground
 const VantaBackground = dynamic(() => import("./components/VantaBackground"), { ssr: false });
@@ -26,33 +26,9 @@ const content = {
     ],
     interests: ["Distributed Systems", "Algorithm Design", "Scientific Computing", "System Architecture", "Database Optimization"]
   },
-  skills: {
-    languages: [
-      { name: "C++", level: 95 },
-      { name: "Python", level: 90 },
-      { name: "C#/.NET", level: 85 },
-      { name: "SQL", level: 80 },
-      { name: "Java", level: 75 },
-      { name: "JavaScript/TypeScript", level: 70 },
-    ],
-    frameworks: ["ASP.NET Core", "FastAPI", "Entity Framework", "React", "Flutter", "WPF"],
-    tools: ["Docker", "Git", "PostgreSQL", "Redis", "Azure", "AWS", "CI/CD"],
-    concepts: ["Multithreading", "Test-Driven Development", "Clean Architecture", "SOLID Principles", "Design Patterns"]
-  },
-  approach: {
-    philosophy: "I approach software development with a blend of precision engineering and creative problem-solving. Every line of code should be purposeful, maintainable, and aligned with business objectives.",
-    process: [
-      { phase: "Research & Analysis", description: "Deep understanding of requirements and constraints" },
-      { phase: "Architecture Design", description: "Planning scalable and maintainable system structures" },
-      { phase: "Test-Driven Implementation", description: "Building with quality and correctness as first priorities" },
-      { phase: "Iterative Refinement", description: "Continuous improvement through feedback and metrics" },
-    ],
-    values: ["Performance Optimization", "Clean Code", "Reliability", "Security by Design", "User-Centered Solutions"]
-  },
   hackathons: [
-    { place: "🥇", event: "CampAIgn Matcher", desc: "Advanced OSINT intelligence gathering tool" },
-    { place: "🥉", event: "MissionForce 2025", desc: "Comprehensive volunteer coordination system" },
-    { place: "🎯", event: "ResQdoc", desc: "Emergency medical documentation workflow" },
+    { place: "First Place", event: "CampAIgn Matcher", desc: "Advanced OSINT intelligence gathering tool" },
+    { place: "Third Place", event: "ResQdoc", desc: "Emergency medical documentation workflow" },
   ],
 };
 
@@ -194,40 +170,11 @@ const styles = `
     background: linear-gradient(90deg, var(--accent), var(--accent-soft));
     border-radius: 4px;
   }
-  
-  /* Timeline for approach section */
-  .timeline-item {
-    position: relative;
-    padding-left: 28px;
-  }
-  .timeline-item:before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 10px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 10px rgba(10,132,255,0.6);
-  }
-  .timeline-item:after {
-    content: "";
-    position: absolute;
-    left: 6px;
-    top: 30px;
-    bottom: -20px;
-    width: 1px;
-    background: linear-gradient(to bottom, var(--accent-soft), transparent);
-  }
-  .timeline-item:last-child:after {
-    display: none;
-  }
 `;
 
 export default function UltraModernPortfolio() {
   // Updated sections array to include all sections
-  const sections = ["home", "about", "projects", "skills", "wins", "approach", "contact"] as const;
+  const sections = ["home", "about", "projects", "skills", "wins", "contact"] as const;
   const active = useActive(sections as unknown as string[]);
   // Add density control for mobile
   const [maxDensity] = useState(() => 
@@ -237,7 +184,7 @@ export default function UltraModernPortfolio() {
 
   const navigationItems = [
     { id: "contact", label: "Contact" },
-    { id: "approach", label: "Approach" },
+
     { id: "projects", label: "Projects" },
     { id: "about", label: "About" },
     { id: "home", label: "Home" }
@@ -269,7 +216,7 @@ export default function UltraModernPortfolio() {
               ))}
             </nav>
             <a
-              href={`mailto:${content.email}`}
+              href="#contact"
               className="hidden md:block bg-white text-black px-6 py-3 rounded-full text-sm font-semibold magnetic-hover button-glow enhanced-glow"
             >
               Get in Touch
@@ -509,78 +456,8 @@ export default function UltraModernPortfolio() {
             </div>
           </section>
 
-          {/* APPROACH SECTION (NEW) */}
-          <section id="approach" className="scroll-mt-24 px-8 py-32 relative section-glow scroll-reveal">
-            <div className="max-w-7xl mx-auto relative z-10">
-              <div className="text-center mb-24 scroll-reveal">
-                <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight enhanced-glow">
-                  My <span className="gradient-text">Approach</span>
-                </h2>
-                <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                  A methodical process designed to deliver exceptional results
-                </p>
-              </div>
 
-              <div className="grid md:grid-cols-2 gap-16">
-                <div className="glass-card p-8 scroll-reveal">
-                  <h3 className="text-3xl font-bold text-white mb-8">Philosophy</h3>
-                  <p className="text-gray-300 leading-relaxed text-lg mb-8">
-                    {content.approach.philosophy}
-                  </p>
-                  
-                  <h4 className="text-xl font-bold text-white mb-6">Core Values</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    {content.approach.values.map((value, index) => (
-                      <div 
-                        key={index}
-                        className="glass-card p-4 text-center hover:border-[#60a5fa]/40 transition-colors duration-300"
-                      >
-                        <span className="text-gray-300">{value}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="glass-card p-8 scroll-reveal">
-                  <h3 className="text-3xl font-bold text-white mb-8">Development Process</h3>
-                  <div className="space-y-12">
-                    {content.approach.process.map((step, index) => (
-                      <div key={index} className="timeline-item pl-8">
-                        <h4 className="text-xl font-bold text-[#60a5fa] mb-2">{step.phase}</h4>
-                        <p className="text-gray-300">{step.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* CONTACT SECTION */}
-          <section id="contact" className="scroll-mt-24 px-8 py-32 section-glow relative scroll-reveal">
-            <div className="max-w-5xl mx-auto text-center relative z-10">
-              <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight floating enhanced-glow">
-                Let&apos;s Build the <span className="gradient-text">Future</span>
-              </h2>
-              <p className="text-xl text-gray-400 mb-16 max-w-3xl mx-auto leading-relaxed scroll-reveal">
-                Ready to contribute to revolutionary projects and solve complex engineering challenges
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-                <a href={`mailto:${content.email}`} className="btn-primary">{content.email}</a>
-                {content.github !== "#" && (
-                  <a href={content.github} target="_blank" rel="noreferrer" className="btn-outline">
-                    GitHub Profile
-                  </a>
-                )}
-                {content.linkedin !== "#" && (
-                  <a href={content.linkedin} target="_blank" rel="noreferrer" className="btn-outline">
-                    LinkedIn
-                  </a>
-                )}
-              </div>
-            </div>
-          </section>
+          <ContactSection />
         </main>
 
         {/* FLOATING MOBILE NAVIGATION - UPDATED */}
