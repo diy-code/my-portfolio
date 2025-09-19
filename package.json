@@ -14,8 +14,8 @@
     "@types/three": "^0.179.0",
     "framer-motion": "^12.23.14",
     "next": "15.5.2",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "tech-stack-icons": "3.3.2",
     "three": "^0.179.1",
     "vanta": "^0.5.24"
